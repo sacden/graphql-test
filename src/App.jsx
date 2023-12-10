@@ -23,15 +23,15 @@ function App() {
       case 1:
         return ["name", product.name, false];
       case 2:
-        return ["itemsCount", product.itemsCount, false];
+        return ["itemsCount", product.itemsCount, true];
       case 3:
         return product.archived ? ["archived", "true", false] : ["archived", "false", false];
       case 4:
         return ["icon", product.icon, true];
       case 5:
-        return ["createdAt", product.createdAt, false];
+        return ["createdAt", product.createdAt, true];
       case 6:
-        return ["lastImport", product.lastImport, false];
+        return ["lastImport", product.lastImport, true];
       default:
         return null;
     }
@@ -43,7 +43,7 @@ function App() {
   };
 
   const onInputChange = async (event, productId, columnName) => {
-    const newValue = event.target.value;
+    const newValue = event.target.value === "false" ? false : event.target.value;
 
     try {
       await updateDataSource({
@@ -51,7 +51,7 @@ function App() {
           updateDataSourceId: productId,
           name: columnName === "name" ? newValue : undefined,
           itemsCount: columnName === "itemsCount" ? newValue : undefined,
-          archived: columnName === "archived" ? newValue : undefined,
+          archived: columnName === "archived" ? Boolean(newValue) : undefined,
           createdAt: columnName === "createdAt" ? newValue : undefined,
           lastImport: columnName === "lastImport" ? newValue : undefined,
         },
@@ -115,7 +115,18 @@ function App() {
                 (column) =>
                   column.state && (
                     <td key={column.id}>
-                      <input disabled={renderCell(column, product)[2]} value={renderCell(column, product)[1]} onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])} />{" "}
+                      {column.id === 3 ? (
+                        <select value={String(product.archived)} onChange={(event) => onInputChange(event, product.id, "archived")}>
+                          <option value="true">true</option>
+                          <option value="false">false</option>
+                        </select>
+                      ) : (
+                        <input
+                          disabled={renderCell(column, product)[2]}
+                          value={renderCell(column, product)[1]}
+                          onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])}
+                        />
+                      )}
                     </td>
                   )
               )}
