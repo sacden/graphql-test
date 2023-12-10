@@ -1,5 +1,6 @@
 import React from "react";
 import { renderCell } from "../../helpers/renderCell";
+import { formatTimeAgo } from "../../helpers/formatTimeAgo";
 
 const ProductTable = ({ columns, products, onInputChange }) => {
   return (
@@ -28,7 +29,11 @@ const ProductTable = ({ columns, products, onInputChange }) => {
                         <option value="false">false</option>
                       </select>
                     ) : (
-                      <input disabled={renderCell(column, product)[2]} value={renderCell(column, product)[1]} onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])} />
+                      <input
+                        disabled={renderCell(column, product)[2]}
+                        value={column.id === 5 || column.id === 6 ? formatTimeAgo(renderCell(column, product)[1]) : renderCell(column, product)[1]}
+                        onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])}
+                      />
                     )}
                   </td>
                 )
