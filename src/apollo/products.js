@@ -16,3 +16,17 @@ export const ALL_PRODUCTS = gql`
     }
   }
 `;
+
+export const UPDATE_DATA_SOURCE = gql`
+  mutation UpdateDataSource($updateDataSourceId: BigInt!, $name: String, $archived: Boolean, $createdAt: ISO8601DateTime, $itemsCount: BigInt, $lastImport: ISO8601DateTime) {
+    updateDataSource(id: $updateDataSourceId, name: $name, archived: $archived, createdAt: $createdAt, itemsCount: $itemsCount, lastImport: $lastImport) {
+      dataSource {
+        name
+        archived
+        createdAt
+        itemsCount
+        lastImport
+      }
+    }
+  }
+`;

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 
 import "./App.css";
 
-import { useQuery } from "@apollo/client";
-import { ALL_PRODUCTS } from "./apollo/products";
+import { useQuery, useMutation } from "@apollo/client";
+import { ALL_PRODUCTS, UPDATE_DATA_SOURCE } from "./apollo/products";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -16,21 +16,22 @@ function App() {
     { id: 6, label: "Last import", state: true },
   ]);
   const { loading, error, data } = useQuery(ALL_PRODUCTS);
+  const [updateDataSource] = useMutation(UPDATE_DATA_SOURCE);
 
   const renderCell = (column, product) => {
     switch (column.id) {
       case 1:
-        return product.name;
+        return ["name", product.name, false];
       case 2:
-        return product.itemsCount;
+        return ["itemsCount", product.itemsCount, false];
       case 3:
-        return product.archived ? "true" : "false";
+        return product.archived ? ["archived", "true", false] : ["archived", "false", false];
       case 4:
-        return product.icon;
+        return ["icon", product.icon, true];
       case 5:
-        return product.createdAt;
+        return ["createdAt", product.createdAt, false];
       case 6:
-        return product.lastImport;
+        return ["lastImport", product.lastImport, false];
       default:
         return null;
     }
@@ -39,6 +40,36 @@ function App() {
   const onSelectCheckbox = (e) => {
     const updatedColumns = columns.map((column) => (column.id === parseInt(e.target.value) ? { ...column, state: !column.state } : column));
     setColumns(updatedColumns);
+  };
+
+  const onInputChange = async (event, productId, columnName) => {
+    const newValue = event.target.value;
+
+    try {
+      await updateDataSource({
+        variables: {
+          updateDataSourceId: productId,
+          name: columnName === "name" ? newValue : undefined,
+          itemsCount: columnName === "itemsCount" ? newValue : undefined,
+          archived: columnName === "archived" ? newValue : undefined,
+          createdAt: columnName === "createdAt" ? newValue : undefined,
+          lastImport: columnName === "lastImport" ? newValue : undefined,
+        },
+      });
+    } catch (error) {
+      console.error("Mutation error:", error.message);
+    }
+
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId
+          ? {
+              ...product,
+              [columnName]: newValue,
+            }
+          : product
+      )
+    );
   };
 
   useEffect(() => {
@@ -54,8 +85,6 @@ function App() {
 
   return (
     <>
-      {/* {JSON.stringify(data)} */}
-
       {columns.map((column) => {
         return (
           <div className="form-check" key={column.id}>
@@ -81,7 +110,16 @@ function App() {
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product.id}>{columns.map((column) => column.state && <td key={column.id}>{renderCell(column, product)}</td>)}</tr>
+            <tr key={product.id}>
+              {columns.map(
+                (column) =>
+                  column.state && (
+                    <td key={column.id}>
+                      <input disabled={renderCell(column, product)[2]} value={renderCell(column, product)[1]} onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])} />{" "}
+                    </td>
+                  )
+              )}
+            </tr>
           ))}
         </tbody>
       </table>
