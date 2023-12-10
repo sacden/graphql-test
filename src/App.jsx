@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import ProductTable from "./components/ProductTable/ProductTable";
+import ColumnsSelector from "./components/ColumnSelector/ColumnSelector";
 
 import "./App.css";
 
 import { useQuery, useMutation } from "@apollo/client";
-import { ALL_PRODUCTS, UPDATE_DATA_SOURCE } from "./apollo/products";
+import { GET_PRODUCTS, UPDATE_PRODUCTS } from "./apollo/products";
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -15,27 +17,8 @@ function App() {
     { id: 5, label: "Created", state: true },
     { id: 6, label: "Last import", state: true },
   ]);
-  const { loading, error, data } = useQuery(ALL_PRODUCTS);
-  const [updateDataSource] = useMutation(UPDATE_DATA_SOURCE);
-
-  const renderCell = (column, product) => {
-    switch (column.id) {
-      case 1:
-        return ["name", product.name, false];
-      case 2:
-        return ["itemsCount", product.itemsCount, true];
-      case 3:
-        return product.archived ? ["archived", "true", false] : ["archived", "false", false];
-      case 4:
-        return ["icon", product.icon, true];
-      case 5:
-        return ["createdAt", product.createdAt, true];
-      case 6:
-        return ["lastImport", product.lastImport, true];
-      default:
-        return null;
-    }
-  };
+  const { loading, error, data } = useQuery(GET_PRODUCTS);
+  const [updateDataSource] = useMutation(UPDATE_PRODUCTS);
 
   const onSelectCheckbox = (e) => {
     const updatedColumns = columns.map((column) => (column.id === parseInt(e.target.value) ? { ...column, state: !column.state } : column));
@@ -44,6 +27,17 @@ function App() {
 
   const onInputChange = async (event, productId, columnName) => {
     const newValue = event.target.value === "false" ? false : event.target.value;
+
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId
+          ? {
+              ...product,
+              [columnName]: newValue,
+            }
+          : product
+      )
+    );
 
     try {
       await updateDataSource({
@@ -58,18 +52,9 @@ function App() {
       });
     } catch (error) {
       console.error("Mutation error:", error.message);
+      const { data } = await refetch();
+      setProducts(data.collection.dataSources);
     }
-
-    setProducts((prevProducts) =>
-      prevProducts.map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              [columnName]: newValue,
-            }
-          : product
-      )
-    );
   };
 
   useEffect(() => {
@@ -85,55 +70,8 @@ function App() {
 
   return (
     <>
-      {columns.map((column) => {
-        return (
-          <div className="form-check" key={column.id}>
-            <input className="form-check-input" type="checkbox" value={column.id} id={`${column.id}`} checked={column.state === true} onChange={(e) => onSelectCheckbox(e)} />
-            <label className="form-check-label" htmlFor={`${column.id}`}>
-              {column.label}
-            </label>
-          </div>
-        );
-      })}
-
-      <table className="table table-striped table-hover">
-        <thead>
-          <tr>
-            {columns.map((column) => {
-              return column.state ? (
-                <th key={column.id} scope="col">
-                  {column.label}
-                </th>
-              ) : null;
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product.id}>
-              {columns.map(
-                (column) =>
-                  column.state && (
-                    <td key={column.id}>
-                      {column.id === 3 ? (
-                        <select value={String(product.archived)} onChange={(event) => onInputChange(event, product.id, "archived")}>
-                          <option value="true">true</option>
-                          <option value="false">false</option>
-                        </select>
-                      ) : (
-                        <input
-                          disabled={renderCell(column, product)[2]}
-                          value={renderCell(column, product)[1]}
-                          onChange={(event) => onInputChange(event, product.id, renderCell(column, product)[0])}
-                        />
-                      )}
-                    </td>
-                  )
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ColumnsSelector columns={columns} onSelectCheckbox={onSelectCheckbox} />
+      <ProductTable columns={columns} products={products} onInputChange={onInputChange} />
     </>
   );
 }
